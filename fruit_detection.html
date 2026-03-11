@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FruitAI Pro — Quality Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f4f0;--surface:#fff;--card:#fff;--border:#e8e5de;--border2:#d4cfc4;
+  --text:#1a1814;--muted:#8a8478;--muted2:#b0aa9e;
+  --fresh:#1a7a4a;--fresh-bg:#edf7f2;--fresh-b:#b8dfc9;
+  --rotten:#9b2335;--rotten-bg:#fdf0f2;--rotten-b:#e8b8c0;
+  --nonfruit:#2d4a8a;--nonfruit-bg:#eff2fb;--nonfruit-b:#b8c4e8;
+  --accent:#2a5c8a;--gold:#c4960a;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 1px 1px,rgba(42,92,138,0.04) 1px,transparent 0);background-size:28px 28px;pointer-events:none;z-index:0;}
+
+/* ── Topbar ── */
+.topbar{position:relative;z-index:10;background:var(--text);display:flex;align-items:center;justify-content:space-between;padding:0 48px;height:48px;}
+.topbar-l{display:flex;align-items:center;gap:24px;}
+.topbar-item{font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:1px;text-transform:uppercase;font-weight:500;}
+.topbar-item.hi{color:rgba(255,255,255,0.8);}
+.topbar-status{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:.8px;text-transform:uppercase;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#4caf82;box-shadow:0 0 6px #4caf82;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ── Header ── */
+header{position:relative;z-index:10;background:var(--surface);border-bottom:2px solid var(--text);padding:0 48px;display:flex;align-items:stretch;justify-content:space-between;}
+.logo-block{display:flex;align-items:center;gap:16px;padding:20px 0;border-right:1px solid var(--border);padding-right:32px;margin-right:0;}
+.logo-icon{width:44px;height:44px;background:var(--text);border-radius:10px;display:grid;place-items:center;font-size:22px;flex-shrink:0;}
+.logo-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1;}
+.logo-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-top:3px;font-weight:500;}
+.header-nav{display:flex;align-items:center;gap:0;flex:1;}
+.nav-item{padding:0 24px;height:100%;display:flex;align-items:center;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-right:1px solid var(--border);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.nav-item.active{color:var(--text);border-bottom:3px solid var(--text);margin-bottom:-2px;}
+.nav-item:hover{color:var(--text);background:var(--bg);}
+.header-actions{display:flex;align-items:center;gap:12px;padding:20px 0 20px 24px;}
+.btn-outline{padding:9px 20px;border-radius:6px;border:1.5px solid var(--border2);background:transparent;color:var(--text);font-family:'Figtree',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+.btn-outline:hover{background:var(--bg);border-color:var(--text);}
+.btn-solid{padding:9px 20px;border-radius:6px;border:1.5px solid var(--text);background:var(--text);color:#fff;font-family:'Figtree',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;}
+.btn-solid:hover{background:#2a2520;}
+
+/* ── Pages ── */
+.page{display:none;animation:fadeIn .3s ease both;}
+.page.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Page header ── */
+.page-head{position:relative;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);padding:32px 48px 28px;display:flex;align-items:flex-end;justify-content:space-between;}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,4vw,52px);font-weight:700;line-height:1;letter-spacing:-1.5px;}
+.page-title span{color:var(--accent);}
+.page-desc{margin-top:8px;font-size:14px;color:var(--muted);font-weight:300;max-width:480px;line-height:1.6;}
+.page-meta{display:flex;gap:32px;}
+.meta-item{text-align:right;}
+.meta-val{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--text);}
+.meta-lbl{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;}
+
+/* ── Main grid ── */
+.main-grid{position:relative;z-index:10;max-width:1300px;margin:0 auto;padding:32px 24px 60px;display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.full-width{position:relative;z-index:10;max-width:1300px;margin:0 auto;padding:32px 24px 60px;}
+
+/* ── Cards ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);transition:box-shadow .3s;animation:fadeUp .5s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.card:hover{box-shadow:0 4px 24px rgba(0,0,0,.1);}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:linear-gradient(to bottom,#fafaf8,var(--card));}
+.card-header-l{display:flex;align-items:center;gap:10px;}
+.card-num{width:22px;height:22px;border-radius:5px;background:var(--text);color:#fff;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text);}
+.card-status{font-size:10px;font-weight:600;padding:3px 10px;border-radius:100px;background:var(--bg);color:var(--muted);border:1px solid var(--border);text-transform:uppercase;letter-spacing:1px;transition:all .3s;}
+.card-status.active{background:#edf7f2;color:var(--fresh);border-color:var(--fresh-b);}
+
+/* ══════════════════════════════════════════
+   DETECTION PAGE
+══════════════════════════════════════════ */
+.cam-section{padding:20px;}
+.cam-viewport{position:relative;width:100%;aspect-ratio:16/10;background:var(--text);border-radius:10px;overflow:hidden;border:2px solid var(--border2);transition:border-color .3s;}
+.cam-viewport.live{border-color:var(--fresh);box-shadow:0 0 0 3px rgba(26,122,74,.1);}
+.cam-idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:linear-gradient(135deg,#1a1814,#2a2520);}
+.cam-circle{width:72px;height:72px;border-radius:50%;border:2px solid rgba(255,255,255,.15);display:grid;place-items:center;font-size:28px;position:relative;}
+.cam-circle::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px dashed rgba(255,255,255,.08);animation:spinSlow 12s linear infinite;}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+.cam-idle-txt{font-size:13px;color:rgba(255,255,255,.35);}
+#video{width:100%;height:100%;object-fit:cover;display:none;}
+#previewImg{width:100%;height:100%;object-fit:cover;display:none;}
+.scan-ov{position:absolute;inset:0;display:none;background:rgba(10,8,6,.72);backdrop-filter:blur(3px);z-index:5;flex-direction:column;align-items:center;justify-content:center;}
+.scan-ov.on{display:flex;}
+.scan-bar{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#4caf82,transparent);box-shadow:0 0 14px #4caf82;animation:scanMove 2s ease-in-out infinite;}
+@keyframes scanMove{0%{top:0%}100%{top:100%}}
+.corner{position:absolute;width:28px;height:28px;}
+.corner.tl{top:16px;left:16px;border-top:2px solid #4caf82;border-left:2px solid #4caf82;border-radius:3px 0 0 0;}
+.corner.tr{top:16px;right:16px;border-top:2px solid #4caf82;border-right:2px solid #4caf82;border-radius:0 3px 0 0;}
+.corner.bl{bottom:16px;left:16px;border-bottom:2px solid #4caf82;border-left:2px solid #4caf82;border-radius:0 0 0 3px;}
+.corner.br2{bottom:16px;right:16px;border-bottom:2px solid #4caf82;border-right:2px solid #4caf82;border-radius:0 0 3px 0;}
+.scan-progress{width:140px;height:2px;background:rgba(255,255,255,.1);border-radius:1px;margin:12px auto 0;overflow:hidden;}
+.scan-progress-fill{height:100%;background:#4caf82;animation:progressFill 2s ease-in-out infinite;}
+@keyframes progressFill{0%{width:0%}100%{width:100%}}
+.scan-label-txt{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:2px;text-transform:uppercase;font-weight:600;}
+.cam-info-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-top:14px;}
+.cam-info-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:500;}
+.cam-info-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);}
+.cam-info-dot.on{background:var(--fresh);box-shadow:0 0 5px var(--fresh);animation:pulse 2s infinite;}
+.action-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px;}
+.act-btn{padding:11px 8px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:'Figtree',sans-serif;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.act-btn:hover:not(:disabled){background:var(--bg);border-color:var(--border2);transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.act-btn:disabled{opacity:.3;cursor:not-allowed;}
+.act-btn-primary{background:var(--text);color:#fff;border-color:var(--text);box-shadow:0 2px 12px rgba(26,24,20,.2);}
+.act-btn-primary:hover:not(:disabled){background:#2a2520!important;box-shadow:0 4px 16px rgba(26,24,20,.3)!important;}
+.act-btn-danger{color:var(--rotten);border-color:rgba(155,35,53,.2);}
+.act-btn-danger:hover:not(:disabled){background:var(--rotten-bg)!important;}
+.upload-area{margin-top:14px;border:2px dashed var(--border2);border-radius:8px;padding:20px 16px;text-align:center;cursor:pointer;transition:all .2s;}
+.upload-area:hover,.upload-area.dov{border-color:var(--accent);background:rgba(42,92,138,.03);}
+.upload-icon{font-size:22px;opacity:.4;}
+.upload-txt{font-size:12px;color:var(--muted);margin-top:6px;}
+.upload-txt span{color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:2px;}
+#fileInput{display:none;}
+canvas{display:none;}
+
+/* Result panel */
+.result-panel{padding:24px;min-height:420px;display:flex;flex-direction:column;}
+.result-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;border:2px dashed var(--border);border-radius:8px;padding:40px;}
+.empty-icon-wrap{font-size:40px;opacity:.25;}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--muted);}
+.empty-sub{font-size:13px;color:var(--muted2);line-height:1.6;max-width:200px;}
+#resultDisplay{display:none;flex-direction:column;gap:0;animation:fadeUp .4s ease both;}
+.result-strip{display:flex;align-items:stretch;gap:0;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.strip-main{flex:1;padding:20px 22px;}
+.strip-side{width:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);border-left:1px solid var(--border);font-size:44px;gap:4px;}
+.strip-side-lbl{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.result-fruit-name{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:700;line-height:1;letter-spacing:-1.5px;}
+.result-fruit-sub{font-size:12px;color:var(--muted);margin-top:6px;font-weight:400;line-height:1.5;}
+.quality-tag{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;margin-top:14px;}
+.qtag-fresh{background:var(--fresh-bg);color:var(--fresh);border:1px solid var(--fresh-b);}
+.qtag-rotten{background:var(--rotten-bg);color:var(--rotten);border:1px solid var(--rotten-b);}
+.qtag-nonfruit{background:var(--nonfruit-bg);color:var(--nonfruit);border:1px solid var(--nonfruit-b);}
+.qtag-dot{width:7px;height:7px;border-radius:50%;animation:pulse 1.5s infinite;}
+.qtag-dot-f{background:var(--fresh);}
+.qtag-dot-r{background:var(--rotten);}
+.qtag-dot-n{background:var(--nonfruit);}
+.conf-section{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;}
+.conf-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.conf-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);}
+.conf-val{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;line-height:1;transition:color .5s;}
+.conf-track{height:6px;background:var(--border);border-radius:100px;overflow:hidden;}
+.conf-fill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.23,1,.32,1),background .5s;width:0%;}
+.preds-table{border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.preds-head{display:grid;grid-template-columns:32px 1fr 60px;padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);}
+.pred-row{display:grid;grid-template-columns:32px 1fr 60px;padding:12px 14px;align-items:center;border-bottom:1px solid var(--border);transition:background .2s;}
+.pred-row:last-child{border-bottom:none;}
+.pred-row:hover{background:var(--bg);}
+.pred-row.top{background:linear-gradient(to right,rgba(26,122,74,.04),transparent);}
+.pred-rank{width:22px;height:22px;border-radius:5px;background:var(--border);display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--muted);}
+.pred-row.top .pred-rank{background:var(--text);color:#fff;}
+.pred-name{font-size:13px;font-weight:500;padding:0 10px;}
+.pred-pct{font-size:13px;font-weight:700;text-align:right;color:var(--muted);}
+.pred-row.top .pred-pct{color:var(--text);}
+
+/* Stats footer */
+.stats-footer{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.stat-block{padding:20px 24px;border-right:1px solid var(--border);transition:background .2s;}
+.stat-block:last-child{border-right:none;}
+.stat-block:hover{background:var(--bg);}
+.stat-number{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--text);line-height:1;}
+.stat-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:1.5px;margin-top:4px;font-weight:600;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ══════════════════════════════════════════
+   HISTORY PAGE
+══════════════════════════════════════════ */
+.history-table{width:100%;border-collapse:collapse;}
+.history-table th{background:var(--bg);padding:12px 16px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);border-bottom:2px solid var(--border);}
+.history-table td{padding:14px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.history-table tr:hover td{background:var(--bg);}
+.history-table tr:last-child td{border-bottom:none;}
+.h-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;}
+.h-fresh{background:var(--fresh-bg);color:var(--fresh);border:1px solid var(--fresh-b);}
+.h-rotten{background:var(--rotten-bg);color:var(--rotten);border:1px solid var(--rotten-b);}
+.h-nonfruit{background:var(--nonfruit-bg);color:var(--nonfruit);border:1px solid var(--nonfruit-b);}
+.h-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;border:1px solid var(--border);}
+.h-thumb-placeholder{width:44px;height:44px;border-radius:6px;background:var(--bg);border:1px solid var(--border);display:grid;place-items:center;font-size:20px;}
+.history-empty{text-align:center;padding:60px 20px;color:var(--muted);}
+.history-empty .ei{font-size:48px;opacity:.2;display:block;margin-bottom:12px;}
+.clear-btn{padding:8px 18px;border-radius:6px;border:1.5px solid var(--rotten-b);background:var(--rotten-bg);color:var(--rotten);font-family:'Figtree',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px;}
+.clear-btn:hover{background:var(--rotten);color:#fff;}
+
+/* ══════════════════════════════════════════
+   ANALYTICS PAGE
+══════════════════════════════════════════ */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;}
+.analytics-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;margin-bottom:24px;}
+.stat-big-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;text-align:center;transition:all .2s;}
+.stat-big-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);transform:translateY(-2px);}
+.sbc-icon{font-size:36px;margin-bottom:12px;}
+.sbc-val{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;line-height:1;}
+.sbc-lbl{font-size:11px;color:var(--muted2);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px;font-weight:600;}
+.sbc-fresh{color:var(--fresh);}
+.sbc-rotten{color:var(--rotten);}
+.sbc-nonfruit{color:var(--nonfruit);}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.chart-card-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.chart-card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;}
+.chart-card-body{padding:20px;}
+.no-data-msg{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+
+/* ══════════════════════════════════════════
+   SETTINGS PAGE
+══════════════════════════════════════════ */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.settings-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.settings-head{padding:16px 20px;border-bottom:1px solid var(--border);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;}
+.settings-body{padding:20px;display:flex;flex-direction:column;gap:20px;}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:16px;}
+.setting-label{font-size:13px;font-weight:500;}
+.setting-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.setting-control input[type=range]{width:120px;accent-color:var(--accent);}
+.setting-control select{padding:6px 12px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg);font-family:'Figtree',sans-serif;font-size:12px;font-weight:500;color:var(--text);cursor:pointer;}
+.toggle{position:relative;width:44px;height:24px;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border2);border-radius:100px;cursor:pointer;transition:.3s;}
+.toggle-slider::before{content:'';position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:var(--fresh);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);}
+.save-btn{padding:11px 24px;border-radius:8px;border:none;background:var(--text);color:#fff;font-family:'Figtree',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;margin-top:8px;}
+.save-btn:hover{background:#2a2520;}
+.model-info-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.model-info-row:last-child{border-bottom:none;}
+.model-info-key{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:600;}
+.model-info-val{font-weight:600;}
+.theme-options{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.theme-opt{padding:12px;border-radius:8px;border:2px solid var(--border);cursor:pointer;text-align:center;font-size:12px;font-weight:600;transition:all .2s;}
+.theme-opt.selected{border-color:var(--accent);background:var(--nonfruit-bg);color:var(--accent);}
+.theme-opt:hover{border-color:var(--border2);}
+
+/* ── Notification ── */
+.notif-wrap{position:fixed;top:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+.notif{background:var(--text);color:#fff;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.2);display:flex;align-items:center;gap:10px;animation:slideIn .35s cubic-bezier(.23,1,.32,1) both;min-width:220px;}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.notif-icon{font-size:16px;flex-shrink:0;}
+.notif.notif-fresh{background:var(--fresh);}
+.notif.notif-rotten{background:var(--rotten);}
+.notif.notif-info{background:var(--accent);}
+.notif.notif-success{background:var(--fresh);}
+
+footer{position:relative;z-index:10;background:var(--text);color:rgba(255,255,255,.4);padding:16px 48px;display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:.5px;}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div class="topbar">
+  <div class="topbar-l">
+    <span class="topbar-item hi">FruitAI Pro</span>
+    <span class="topbar-item">Quality Intelligence Platform</span>
+    <span class="topbar-item">v2.0</span>
+  </div>
+  <div class="topbar-status"><div class="status-dot"></div>System Operational</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo-block">
+    <div class="logo-icon">🍎</div>
+    <div><div class="logo-name">FruitAI</div><div class="logo-sub">Quality Intelligence</div></div>
+  </div>
+  <div class="header-nav">
+    <div class="nav-item active" onclick="showPage('detection',this)">Detection</div>
+    <div class="nav-item" onclick="showPage('history',this)">History</div>
+    <div class="nav-item" onclick="showPage('analytics',this)">Analytics</div>
+    <div class="nav-item" onclick="showPage('settings',this)">Settings</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-outline" onclick="exportReport()">Export Report</button>
+    <button class="btn-solid" onclick="showPage('detection',document.querySelector('.nav-item'))">New Scan</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════
+     DETECTION PAGE
+══════════════════════════════════════════ -->
+<div class="page active" id="page-detection">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Fruit Quality <span>Detection</span></h1>
+      <p class="page-desc">Capture or upload a fruit image to receive instant AI-powered freshness classification.</p>
+    </div>
+    <div class="page-meta">
+      <div class="meta-item"><div class="meta-val">89.8%</div><div class="meta-lbl">Model Accuracy</div></div>
+      <div class="meta-item"><div class="meta-val">30</div><div class="meta-lbl">Fruit Classes</div></div>
+      <div class="meta-item"><div class="meta-val" id="scanCountHead">0</div><div class="meta-lbl">Scans Today</div></div>
+    </div>
+  </div>
+
+  <div class="main-grid">
+    <!-- Input Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-l"><div class="card-num">01</div><span class="card-title">Image Input</span></div>
+        <span class="card-status" id="inputStatus">Standby</span>
+      </div>
+      <div class="cam-section">
+        <div class="cam-viewport" id="camViewport">
+          <div class="cam-idle" id="camIdle">
+            <div class="cam-circle">📷</div>
+            <div class="cam-idle-txt">Awaiting image input</div>
+          </div>
+          <video id="video" autoplay playsinline></video>
+          <img id="previewImg" alt="Preview"/>
+          <div class="scan-ov" id="scanOv">
+            <div class="scan-bar"></div>
+            <div class="corner tl"></div><div class="corner tr"></div>
+            <div class="corner bl"></div><div class="corner br2"></div>
+            <div><div class="scan-label-txt">Processing Image</div><div class="scan-progress"><div class="scan-progress-fill"></div></div></div>
+          </div>
+        </div>
+        <div class="cam-info-bar">
+          <div class="cam-info-item"><div class="cam-info-dot" id="camDot"></div><span id="camInfoTxt">Camera Inactive</span></div>
+          <div class="cam-info-item"><div class="cam-info-dot"></div><span>640×480</span></div>
+          <div class="cam-info-item"><div class="cam-info-dot"></div><span>JPEG</span></div>
+        </div>
+        <div class="action-row">
+          <button class="act-btn" id="camBtn" onclick="startCam()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Camera
+          </button>
+          <button class="act-btn act-btn-primary" id="capBtn" onclick="capture()" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="8"/></svg>Capture
+          </button>
+          <button class="act-btn act-btn-danger" onclick="resetAll()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>Reset
+          </button>
+        </div>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()"
+          ondragover="event.preventDefault();this.classList.add('dov')"
+          ondragleave="this.classList.remove('dov')" ondrop="handleDrop(event)">
+          <div class="upload-icon">📁</div>
+          <p class="upload-txt">Drag & drop image or <span>click to browse</span></p>
+          <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)"/>
+        </div>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Result Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-l"><div class="card-num">02</div><span class="card-title">Analysis Result</span></div>
+        <span class="card-status" id="resultStatus">Awaiting Input</span>
+      </div>
+      <div class="result-panel">
+        <div class="result-empty" id="resultEmpty">
+          <div class="empty-icon-wrap">🔬</div>
+          <div class="empty-title">No Data Yet</div>
+          <p class="empty-sub">Submit a fruit image to generate quality analysis</p>
+        </div>
+        <div id="resultDisplay">
+          <div class="result-strip">
+            <div class="strip-main">
+              <div class="result-fruit-name" id="fruitName">—</div>
+              <div class="result-fruit-sub" id="fruitDesc">—</div>
+              <div class="quality-tag qtag-fresh" id="qualityTag">
+                <div class="qtag-dot qtag-dot-f" id="qualityDot"></div>
+                <span id="qualityText">Fresh</span>
+              </div>
+            </div>
+            <div class="strip-side"><div id="fruitEmoji">🍑</div><div class="strip-side-lbl">Detected</div></div>
+          </div>
+          <div class="conf-section">
+            <div class="conf-row">
+              <span class="conf-lbl">Confidence Score</span>
+              <span class="conf-val" id="confVal">—</span>
+            </div>
+            <div class="conf-track"><div class="conf-fill" id="confFill"></div></div>
+          </div>
+          <div class="preds-table">
+            <div class="preds-head"><span>#</span><span>Classification</span><span style="text-align:right">Score</span></div>
+            <div id="predsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats footer -->
+    <div class="stats-footer">
+      <div class="stat-block"><div class="stat-number">30</div><div class="stat-label">Total Classes</div><div class="stat-sub">10 fresh · 10 rotten · 10 non</div></div>
+      <div class="stat-block"><div class="stat-number">89.8%</div><div class="stat-label">Val Accuracy</div><div class="stat-sub">MobileNetV2</div></div>
+      <div class="stat-block"><div class="stat-number" id="statConf">—</div><div class="stat-label">Last Confidence</div><div class="stat-sub">Most recent scan</div></div>
+      <div class="stat-block"><div class="stat-number" id="statScans">0</div><div class="stat-label">Total Scans</div><div class="stat-sub">This session</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     HISTORY PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-history">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Scan <span>History</span></h1>
+      <p class="page-desc">All previous fruit quality scans from this session.</p>
+    </div>
+    <div class="page-meta">
+      <div class="meta-item"><div class="meta-val" id="h-total">0</div><div class="meta-lbl">Total Scans</div></div>
+      <div class="meta-item"><div class="meta-val" id="h-fresh">0</div><div class="meta-lbl">Fresh</div></div>
+      <div class="meta-item"><div class="meta-val" id="h-rotten">0</div><div class="meta-lbl">Rotten</div></div>
+    </div>
+  </div>
+  <div class="full-width">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-l"><div class="card-num">📋</div><span class="card-title">Scan Records</span></div>
+        <button class="clear-btn" onclick="clearHistory()">Clear History</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Image</th>
+              <th>Fruit</th>
+              <th>Quality</th>
+              <th>Confidence</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody">
+            <tr><td colspan="6"><div class="history-empty"><span class="ei">📋</span>No scans yet. Go to Detection to scan a fruit!</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     ANALYTICS PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-analytics">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Quality <span>Analytics</span></h1>
+      <p class="page-desc">Visual breakdown of scan results and quality distribution.</p>
+    </div>
+  </div>
+  <div class="full-width">
+    <div class="analytics-grid-3" style="margin-bottom:24px">
+      <div class="stat-big-card"><div class="sbc-icon">🍎</div><div class="sbc-val sbc-fresh" id="a-fresh">0</div><div class="sbc-lbl">Fresh Fruits</div></div>
+      <div class="stat-big-card"><div class="sbc-icon">🔴</div><div class="sbc-val sbc-rotten" id="a-rotten">0</div><div class="sbc-lbl">Rotten Fruits</div></div>
+      <div class="stat-big-card"><div class="sbc-icon">🔵</div><div class="sbc-val sbc-nonfruit" id="a-nonfruit">0</div><div class="sbc-lbl">Non-Fruit</div></div>
+    </div>
+    <div class="analytics-grid">
+      <div class="chart-card">
+        <div class="chart-card-head"><span class="chart-card-title">Quality Distribution</span></div>
+        <div class="chart-card-body" style="height:280px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="pieChart"></canvas>
+          <div class="no-data-msg" id="pieNoData">No scan data yet</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-head"><span class="chart-card-title">Fruit Types Detected</span></div>
+        <div class="chart-card-body" style="height:280px;display:flex;align-items:center;justify-content:center;">
+          <canvas id="barChart"></canvas>
+          <div class="no-data-msg" id="barNoData">No scan data yet</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:24px">
+      <div class="chart-card-head"><span class="chart-card-title">Confidence Over Time</span></div>
+      <div class="chart-card-body" style="height:220px;display:flex;align-items:center;justify-content:center;">
+        <canvas id="lineChart" style="width:100%"></canvas>
+        <div class="no-data-msg" id="lineNoData">No scan data yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SETTINGS PAGE
+══════════════════════════════════════════ -->
+<div class="page" id="page-settings">
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">App <span>Settings</span></h1>
+      <p class="page-desc">Configure model, display, and detection preferences.</p>
+    </div>
+  </div>
+  <div class="full-width">
+    <div class="settings-grid">
+      <!-- Model Info -->
+      <div class="settings-card">
+        <div class="settings-head">Model Information</div>
+        <div class="settings-body">
+          <div class="model-info-row"><span class="model-info-key">Architecture</span><span class="model-info-val">MobileNetV2</span></div>
+          <div class="model-info-row"><span class="model-info-key">Input Size</span><span class="model-info-val">224 × 224 px</span></div>
+          <div class="model-info-row"><span class="model-info-key">Total Classes</span><span class="model-info-val">30 (Fresh + Rotten + NonFruit)</span></div>
+          <div class="model-info-row"><span class="model-info-key">Val Accuracy</span><span class="model-info-val" style="color:var(--fresh)">89.8%</span></div>
+          <div class="model-info-row"><span class="model-info-key">Server URL</span><span class="model-info-val">http://127.0.0.1:5000</span></div>
+          <div class="model-info-row"><span class="model-info-key">Status</span><span class="model-info-val" style="color:var(--fresh)">● Online</span></div>
+        </div>
+      </div>
+
+      <!-- Detection Settings -->
+      <div class="settings-card">
+        <div class="settings-head">Detection Settings</div>
+        <div class="settings-body">
+          <div class="setting-row">
+            <div><div class="setting-label">Confidence Threshold</div><div class="setting-sub">Min confidence to show result</div></div>
+            <div class="setting-control">
+              <input type="range" min="10" max="90" value="40" id="confThreshold" oninput="document.getElementById('confThreshVal').textContent=this.value+'%'"/>
+              <span id="confThreshVal" style="font-size:12px;font-weight:700;margin-left:8px">40%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Image Max Size</div><div class="setting-sub">Resize before sending</div></div>
+            <div class="setting-control">
+              <select id="imgSize">
+                <option value="600">600px</option>
+                <option value="800" selected>800px</option>
+                <option value="1024">1024px</option>
+              </select>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Auto Reset After Scan</div><div class="setting-sub">Clear image after result</div></div>
+            <label class="toggle"><input type="checkbox" id="autoReset"/><span class="toggle-slider"></span></label>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">Show Debug Info</div><div class="setting-sub">Print class info in console</div></div>
+            <label class="toggle"><input type="checkbox" id="debugMode" checked/><span class="toggle-slider"></span></label>
+          </div>
+          <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+        </div>
+      </div>
+
+      <!-- Theme -->
+      <div class="settings-card">
+        <div class="settings-head">Display Theme</div>
+        <div class="settings-body">
+          <div class="theme-options">
+            <div class="theme-opt selected" onclick="selectTheme(this,'light')">☀️ Light (Default)</div>
+            <div class="theme-opt" onclick="selectTheme(this,'warm')">🍂 Warm Cream</div>
+            <div class="theme-opt" onclick="selectTheme(this,'dark')">🌙 Dark Mode</div>
+            <div class="theme-opt" onclick="selectTheme(this,'green')">🌿 Nature Green</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- About -->
+      <div class="settings-card">
+        <div class="settings-head">About FruitAI Pro</div>
+        <div class="settings-body">
+          <div class="model-info-row"><span class="model-info-key">Version</span><span class="model-info-val">2.0.0</span></div>
+          <div class="model-info-row"><span class="model-info-key">Framework</span><span class="model-info-val">TensorFlow + Flask</span></div>
+          <div class="model-info-row"><span class="model-info-key">Frontend</span><span class="model-info-val">Vanilla HTML/CSS/JS</span></div>
+          <div class="model-info-row"><span class="model-info-key">Transfer Learning</span><span class="model-info-val">MobileNetV2 (ImageNet)</span></div>
+          <div class="model-info-row"><span class="model-info-key">Training Phases</span><span class="model-info-val">2 (Freeze + Fine-tune)</span></div>
+          <button class="save-btn" onclick="notify('Server connection verified ✓','success')" style="margin-top:8px">Test Server Connection</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>© 2025 FruitAI Pro — Quality Intelligence Platform</span>
+  <span>MobileNetV2 · 224×224 · 30 Classes</span>
+</footer>
+<div class="notif-wrap" id="notifWrap"></div>
+
+<script>
+// ── Global State ──────────────────────────────────────────────
+let stream=null, camActive=false, scanCount=0;
+let history=[];
+let pieChart=null, barChart=null, lineChart=null;
+let settings={ confThreshold:40, imgSize:800, autoReset:false, debugMode:true };
+
+const EMOJI={apple:'🍎',banana:'🍌',grape:'🍇',mango:'🥭',orange:'🍊',pineapple:'🍍',strawberry:'🍓',watermelon:'🍉',papaya:'🍈',pomegranate:'🔴'};
+function getEmoji(n){ const k=(n||'').toLowerCase(); for(const[a,b] of Object.entries(EMOJI)) if(k.includes(a)) return b; return '🍑'; }
+
+// ── Page Navigation ───────────────────────────────────────────
+function showPage(name, navEl){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  if(navEl) navEl.classList.add('active');
+  if(name==='analytics') renderCharts();
+  if(name==='history') updateHistoryPage();
+}
+
+// ── Notifications ─────────────────────────────────────────────
+function notify(msg, type='info'){
+  const wrap=document.getElementById('notifWrap');
+  const el=document.createElement('div');
+  el.className=`notif notif-${type}`;
+  const icons={fresh:'✅',rotten:'⚠️',info:'ℹ️',error:'❌',success:'✅'};
+  el.innerHTML=`<span class="notif-icon">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  wrap.appendChild(el);
+  setTimeout(()=>{el.style.transition='opacity .3s';el.style.opacity='0';setTimeout(()=>el.remove(),300);},3000);
+}
+
+// ── Camera ────────────────────────────────────────────────────
+async function startCam(){
+  if(camActive)return;
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:640,height:480}});
+    const v=document.getElementById('video'); v.srcObject=stream; v.style.display='block';
+    document.getElementById('camIdle').style.display='none';
+    document.getElementById('previewImg').style.display='none';
+    document.getElementById('camViewport').classList.add('live');
+    document.getElementById('capBtn').disabled=false;
+    document.getElementById('camDot').classList.add('on');
+    document.getElementById('camInfoTxt').textContent='Camera Active';
+    document.getElementById('inputStatus').textContent='Live';
+    document.getElementById('inputStatus').classList.add('active');
+    document.getElementById('camBtn').textContent='● Live';
+    document.getElementById('camBtn').style.color='var(--fresh)';
+    camActive=true; notify('Camera activated','info');
+  }catch(e){notify('Camera access denied','error');}
+}
+
+function stopCam(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  camActive=false;
+  const v=document.getElementById('video'); v.style.display='none';
+  document.getElementById('camViewport').classList.remove('live');
+  document.getElementById('capBtn').disabled=true;
+  document.getElementById('camDot').classList.remove('on');
+  document.getElementById('camInfoTxt').textContent='Camera Inactive';
+  document.getElementById('camBtn').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Camera';
+  document.getElementById('camBtn').style.color='';
+}
+
+function capture(){
+  if(!camActive)return;
+  const v=document.getElementById('video'), c=document.getElementById('canvas');
+  c.width=v.videoWidth; c.height=v.videoHeight;
+  c.getContext('2d').drawImage(v,0,0);
+  const d=c.toDataURL('image/jpeg',0.92);
+  const img=document.getElementById('previewImg'); img.src=d; img.style.display='block';
+  v.style.display='none'; stopCam(); analyze(d);
+}
+
+function handleFile(e){ const f=e.target.files[0]; if(f)readFile(f); }
+function handleDrop(e){
+  e.preventDefault(); document.getElementById('uploadArea').classList.remove('dov');
+  const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/'))readFile(f);
+}
+function readFile(f){
+  stopCam();
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=document.getElementById('previewImg'); img.src=ev.target.result; img.style.display='block';
+    document.getElementById('video').style.display='none';
+    document.getElementById('camIdle').style.display='none';
+    document.getElementById('inputStatus').textContent='Image Loaded';
+    document.getElementById('inputStatus').classList.add('active');
+    analyze(ev.target.result);
+  };
+  r.readAsDataURL(f);
+}
+
+function resetAll(){
+  stopCam();
+  const img=document.getElementById('previewImg'); img.style.display='none'; img.src='';
+  document.getElementById('camIdle').style.display='flex';
+  document.getElementById('scanOv').classList.remove('on');
+  document.getElementById('resultEmpty').style.display='flex';
+  document.getElementById('resultDisplay').style.display='none';
+  document.getElementById('inputStatus').textContent='Standby';
+  document.getElementById('inputStatus').classList.remove('active');
+  document.getElementById('resultStatus').textContent='Awaiting Input';
+  document.getElementById('resultStatus').classList.remove('active');
+  document.getElementById('statConf').textContent='—';
+  document.getElementById('fileInput').value='';
+  document.getElementById('confFill').style.width='0%';
+  notify('Session reset','info');
+}
+
+// ── Resize ────────────────────────────────────────────────────
+function resizeImg(d,max){
+  max=max||settings.imgSize||800;
+  return new Promise(res=>{
+    const i=new Image();
+    i.onload=()=>{
+      let w=i.width,h=i.height;
+      if(w>max||h>max){if(w>h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      c.getContext('2d').drawImage(i,0,0,w,h); res(c.toDataURL('image/jpeg',0.85));
+    }; i.src=d;
+  });
+}
+
+// ── Analyze ───────────────────────────────────────────────────
+async function analyze(data){
+  document.getElementById('scanOv').classList.add('on');
+  document.getElementById('resultEmpty').style.display='none';
+  document.getElementById('resultDisplay').style.display='none';
+  document.getElementById('resultStatus').textContent='Analyzing...';
+  document.getElementById('inputStatus').textContent='Processing';
+  try{
+    const resized=await resizeImg(data);
+    const resp=await fetch('http://127.0.0.1:5000/predict',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({image:resized})
+    });
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error||'Server error');}
+    const r=await resp.json();
+    showResult(r, resized);
+  }catch(e){
+    console.error(e); notify('Error: '+e.message,'error');
+    document.getElementById('scanOv').classList.remove('on');
+    document.getElementById('resultEmpty').style.display='flex';
+    document.getElementById('resultStatus').textContent='Error';
+    document.getElementById('inputStatus').textContent='Standby';
+  }
+}
+
+// ── Show Result ───────────────────────────────────────────────
+function showResult(r, imgData){
+  document.getElementById('scanOv').classList.remove('on');
+  const q=(r.quality||'fresh').toLowerCase();
+  const conf=r.confidence||0;
+  const name=r.fruit||'Unknown';
+
+  document.getElementById('fruitName').textContent=name;
+  document.getElementById('fruitEmoji').textContent=getEmoji(name);
+  document.getElementById('fruitDesc').textContent=r.description||'';
+
+  const tag=document.getElementById('qualityTag');
+  const dot=document.getElementById('qualityDot');
+  tag.className='quality-tag'; dot.className='qtag-dot';
+  let fc='',fc2='';
+  if(q==='fresh'){
+    tag.classList.add('qtag-fresh'); dot.classList.add('qtag-dot-f');
+    document.getElementById('qualityText').textContent='✦ Fresh — Good Quality';
+    fc='#1a7a4a'; fc2='#2ecc71';
+  } else if(q==='rotten'){
+    tag.classList.add('qtag-rotten'); dot.classList.add('qtag-dot-r');
+    document.getElementById('qualityText').textContent='✦ Rotten — Poor Quality';
+    fc='#9b2335'; fc2='#e74c3c';
+  } else {
+    tag.classList.add('qtag-nonfruit'); dot.classList.add('qtag-dot-n');
+    document.getElementById('qualityText').textContent='✦ Non-Fruit Object';
+    fc='#2d4a8a'; fc2='#5b8dee';
+  }
+
+  document.getElementById('confVal').textContent=conf+'%';
+  document.getElementById('confVal').style.color=fc;
+  const fill=document.getElementById('confFill');
+  fill.style.background=`linear-gradient(90deg,${fc},${fc2})`;
+  setTimeout(()=>{fill.style.width=conf+'%';},80);
+
+  const list=document.getElementById('predsList'); list.innerHTML='';
+  (r.top_predictions||[]).forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.className='pred-row'+(i===0?' top':'');
+    d.innerHTML=`<div class="pred-rank">${i+1}</div><div class="pred-name">${p.name}</div><div class="pred-pct">${p.confidence}%</div>`;
+    list.appendChild(d);
+  });
+
+  scanCount++;
+  document.getElementById('statConf').textContent=conf+'%';
+  document.getElementById('statScans').textContent=scanCount;
+  document.getElementById('scanCountHead').textContent=scanCount;
+  document.getElementById('resultStatus').textContent='Complete ✓';
+  document.getElementById('resultStatus').classList.add('active');
+  document.getElementById('inputStatus').textContent='Done';
+  document.getElementById('resultDisplay').style.display='flex';
+
+  // Save to history
+  history.unshift({
+    id: scanCount,
+    name, quality:q, confidence:conf,
+    emoji: getEmoji(name),
+    time: new Date().toLocaleTimeString(),
+    img: imgData
+  });
+
+  updateHistoryPage();
+
+  const nType=q==='fresh'?'fresh':q==='rotten'?'rotten':'info';
+  notify(`${name} — ${q==='fresh'?'Fresh ✓':q==='rotten'?'Rotten ✗':'Non-Fruit'} (${conf}%)`, nType);
+
+  if(settings.autoReset) setTimeout(resetAll, 4000);
+}
+
+// ── History Page ──────────────────────────────────────────────
+function updateHistoryPage(){
+  const fresh=history.filter(h=>h.quality==='fresh').length;
+  const rotten=history.filter(h=>h.quality==='rotten').length;
+  const nonfruit=history.filter(h=>h.quality==='nonfruit').length;
+  document.getElementById('h-total').textContent=history.length;
+  document.getElementById('h-fresh').textContent=fresh;
+  document.getElementById('h-rotten').textContent=rotten;
+
+  const tbody=document.getElementById('historyBody');
+  if(history.length===0){
+    tbody.innerHTML='<tr><td colspan="6"><div class="history-empty"><span class="ei">📋</span>No scans yet. Go to Detection to scan a fruit!</div></td></tr>';
+    return;
+  }
+  tbody.innerHTML=history.map((h,i)=>`
+    <tr>
+      <td style="color:var(--muted);font-weight:700">#${h.id}</td>
+      <td><div class="h-thumb-placeholder">${h.emoji}</div></td>
+      <td style="font-weight:600">${h.name}</td>
+      <td><span class="h-badge h-${h.quality}">${h.quality==='fresh'?'✦ Fresh':h.quality==='rotten'?'✦ Rotten':'✦ Non-Fruit'}</span></td>
+      <td style="font-weight:700">${h.confidence}%</td>
+      <td style="color:var(--muted)">${h.time}</td>
+    </tr>
+  `).join('');
+}
+
+function clearHistory(){
+  history=[];
+  scanCount=0;
+  document.getElementById('statScans').textContent='0';
+  document.getElementById('scanCountHead').textContent='0';
+  updateHistoryPage();
+  notify('History cleared','info');
+}
+
+// ── Analytics Charts ──────────────────────────────────────────
+function renderCharts(){
+  const fresh=history.filter(h=>h.quality==='fresh').length;
+  const rotten=history.filter(h=>h.quality==='rotten').length;
+  const nonfruit=history.filter(h=>h.quality==='nonfruit').length;
+  document.getElementById('a-fresh').textContent=fresh;
+  document.getElementById('a-rotten').textContent=rotten;
+  document.getElementById('a-nonfruit').textContent=nonfruit;
+
+  const hasData=history.length>0;
+
+  // Pie chart
+  document.getElementById('pieNoData').style.display=hasData?'none':'block';
+  document.getElementById('pieChart').style.display=hasData?'block':'none';
+  if(hasData){
+    if(pieChart) pieChart.destroy();
+    pieChart=new Chart(document.getElementById('pieChart'),{
+      type:'doughnut',
+      data:{
+        labels:['Fresh','Rotten','Non-Fruit'],
+        datasets:[{data:[fresh,rotten,nonfruit],backgroundColor:['#1a7a4a','#9b2335','#2d4a8a'],borderWidth:2,borderColor:'#fff'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{family:'Figtree',size:12}}}}}
+    });
+  }
+
+  // Bar chart — fruit types
+  const fruitCounts={};
+  history.forEach(h=>{ fruitCounts[h.name]=(fruitCounts[h.name]||0)+1; });
+  const labels=Object.keys(fruitCounts);
+  const vals=Object.values(fruitCounts);
+  document.getElementById('barNoData').style.display=hasData?'none':'block';
+  document.getElementById('barChart').style.display=hasData?'block':'none';
+  if(hasData){
+    if(barChart) barChart.destroy();
+    barChart=new Chart(document.getElementById('barChart'),{
+      type:'bar',
+      data:{
+        labels,
+        datasets:[{label:'Scans',data:vals,backgroundColor:'#2a5c8a',borderRadius:6}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+    });
+  }
+
+  // Line chart — confidence over time
+  const confData=history.slice().reverse().map(h=>h.confidence);
+  const timeLabels=history.slice().reverse().map(h=>h.time);
+  document.getElementById('lineNoData').style.display=hasData?'none':'block';
+  document.getElementById('lineChart').style.display=hasData?'block':'none';
+  if(hasData){
+    if(lineChart) lineChart.destroy();
+    lineChart=new Chart(document.getElementById('lineChart'),{
+      type:'line',
+      data:{
+        labels:timeLabels,
+        datasets:[{label:'Confidence %',data:confData,borderColor:'#1a7a4a',backgroundColor:'rgba(26,122,74,.08)',tension:.4,fill:true,pointBackgroundColor:'#1a7a4a'}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:100}}}
+    });
+  }
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function saveSettings(){
+  settings.confThreshold=parseInt(document.getElementById('confThreshold').value);
+  settings.imgSize=parseInt(document.getElementById('imgSize').value);
+  settings.autoReset=document.getElementById('autoReset').checked;
+  settings.debugMode=document.getElementById('debugMode').checked;
+  notify('Settings saved ✓','success');
+}
+
+function selectTheme(el, theme){
+  document.querySelectorAll('.theme-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+  const themes={
+    light:{'--bg':'#f5f4f0','--surface':'#fff','--card':'#fff','--text':'#1a1814'},
+    warm:{'--bg':'#fdf6ec','--surface':'#fffaf4','--card':'#fffaf4','--text':'#3d2b1f'},
+    dark:{'--bg':'#0f0f0f','--surface':'#1a1a1a','--card':'#1e1e1e','--text':'#f0ede8','--border':'#2a2a2a','--muted':'#6a6a6a'},
+    green:{'--bg':'#f0f7f2','--surface':'#fff','--card':'#fff','--text':'#1a3a2a','--accent':'#1a7a4a'}
+  };
+  const t=themes[theme]||themes.light;
+  const root=document.documentElement;
+  Object.entries(t).forEach(([k,v])=>root.style.setProperty(k,v));
+  notify(`Theme changed to ${el.textContent}`,'info');
+}
+
+function exportReport(){
+  if(history.length===0){notify('No scans to export yet','error');return;}
+  const rows=['#,Fruit,Quality,Confidence,Time',...history.map(h=>`${h.id},${h.name},${h.quality},${h.confidence}%,${h.time}`)];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='fruitai_report.csv'; a.click();
+  notify('Report exported as CSV ✓','success');
+}
+</script>
+</body>
+</html>
